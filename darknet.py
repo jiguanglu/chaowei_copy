@@ -1,3 +1,7 @@
+# -*- coding:utf-8 -*-
+#author : jiguanglu
+#e-mail : jiguang125@gmail.com
+
 from ctypes import *
 import random
 import time
@@ -48,7 +52,7 @@ class METADATA(Structure):
 
 
 #lib = CDLL("/home/pjreddie/documents/darknet/libdarknet.so", RTLD_GLOBAL)
-lib = CDLL("/Users/jiguang/darknet/libdarknet.so", RTLD_GLOBAL)
+lib = CDLL("/home/dcm360/object-detection/libdarknet.so", RTLD_GLOBAL)
 lib.network_width.argtypes = [c_void_p]
 lib.network_width.restype = c_int
 lib.network_height.argtypes = [c_void_p]
@@ -125,7 +129,8 @@ def classify(net, meta, im):
     res = sorted(res, key=lambda x: -x[1])
     return res
 
-def detect(net, meta, image, thresh=.5, hier_thresh=.5, nms=.45):
+# def detect(net, meta, image, thresh=.5, hier_thresh=.5, nms=.45):
+def detect(net, meta, image, thresh=.5, hier_thresh=.3, nms=.3):
     im = load_image(image, 0, 0)
     num = c_int(0)
     pnum = pointer(num)
@@ -139,6 +144,7 @@ def detect(net, meta, image, thresh=.5, hier_thresh=.5, nms=.45):
         for i in range(meta.classes):
             if dets[j].prob[i] > 0:
                 b = dets[j].bbox
+                #print(meta.names[i])
                 res.append((meta.names[i], dets[j].prob[i], (b.x, b.y, b.w, b.h)))
     res = sorted(res, key=lambda x: -x[1])
     free_image(im)
@@ -147,9 +153,12 @@ def detect(net, meta, image, thresh=.5, hier_thresh=.5, nms=.45):
 
 
 
-def save_region(im_path, res, num):
+
+
+def save_region(im_path, res):
     image = cv2.imread(im_path)
     # cropped = image[int(y - height / 2): int(y + height / 2), int(x - width / 2):int(x + width / 2)]
+    pic_name = im_path.split('/')[-1][0:-5]
     for i in res:
         x = i[2][0]
         y = i[2][1]
@@ -157,36 +166,41 @@ def save_region(im_path, res, num):
         width = i[2][3]
         # label_name = i[0].split('')
         # print(str(i[0]))
+       # print(i)
         label_name = str(i[0]).split('\'')[-2]
         # print(label_name)
         # if i[0] == 'g':
         # if str(i[0]).find('green') != -1:
-        if label_name == 'green':
+        if label_name == 'yellow':
             "函数参数： 图片， 左上角， 右下角， 颜色， 线条粗细， 线条类型，点类型"
             cv2.rectangle(image, (int(x - width / 2), int(y - height / 2)), (int(x + width / 2), int(y + height / 2)), (31,255,60), 1)
 
-            cv2.putText(image, 'green', (int(x - width / 2), int(y - height / 2)), cv2.FONT_HERSHEY_COMPLEX_SMALL, 0.8, (0, 255, 0))
+            cv2.putText(image, 'Y', (int(x - width / 2), int(y - height / 2)-int(0.02*(y-height))), cv2.FONT_HERSHEY_SIMPLEX, 0.3, (255, 255, 255),1)
 
-        # elif str(i[0]).find('red') != -1:
-        elif label_name =='red':
+        elif label_name =='orange':
             cv2.rectangle(image, (int(x - width / 2), int(y - height / 2)), (int(x + width / 2), int(y + height / 2)),
                           (255,0,255), 1)
-            cv2.putText(image, 'red', (int(x - width / 2), int(y - height / 2)), cv2.FONT_HERSHEY_COMPLEX_SMALL, 0.8,
-                        (255,0,255))
+            cv2.putText(image, 'O', (int(x - width / 2), int(y - height / 2)-int(0.02*(y-height))), cv2.FONT_HERSHEY_COMPLEX_SMALL, 0.3,(255,255,255),1)
+        elif label_name == 'blue':
+            "函数参数： 图片， 左上角， 右下角， 颜色， 线条粗细， 线条类型，点类型"
+            cv2.rectangle(image, (int(x - width / 2), int(y - height / 2)), (int(x + width / 2), int(y + height / 2)), (31,255,60), 1)
+
+            cv2.putText(image, 'B', (int(x - width / 2), int(y - height / 2)-int(0.02*(y-height))), cv2.FONT_HERSHEY_SIMPLEX, 0.3, (255, 255, 255),1)
     # cv2.rectangle(image, (int(sx1), int(sy1)), (int(sx2), int(sy2)), (0, 255, 0), 3)
-    cv2.imwrite('save%s.jpg'%num, image)
+    #cv2.imwrite('/Users/jiguang/img_path/%s.jpg'%pic_name,image)
+    cv2.imwrite('/var/www/html/static/recognize/original/recognize_img/%s'%im_path.split('/')[-1],image)
 
 
 
-if __name__ == "__main__":
+def output_points(file_name):
 
     warnings.filterwarnings('ignore')
     start = time.clock()
-    net = load_net(b"/Users/jiguang/my_disk/keras-yolo3-master/my_folder/yolov3-lights.cfg",
-                   b"/Users/jiguang/my_disk/keras-yolo3-master/my_folder/weight/yolov3-lights_10000.weights", 0)
-    meta = load_meta(b"/Users/jiguang/my_disk/keras-yolo3-master/my_folder/voc-light.data")
-    # r = detect(net, meta, b"/Users/jiguang/my_disk/keras-yolo3-master/my_folder/img/stitch/cur/1_1_1_1576823400782.tiff")
-    # print(r)
+    net = load_net(b"/home/dcm360/object-detection/weights/yolov3-voc.cfg",
+                  b"/home/dcm360/object-detection/weights/yolov3-voc_51000.weights", 0)
+    meta = load_meta(b"/home/dcm360/object-detection/weights/voc.data")
+
+
     def get_img_file(file_name):
         imagelist = []
         for parent, dirnames, filenames in os.walk(file_name):
@@ -195,16 +209,44 @@ if __name__ == "__main__":
                         ('.bmp', '.dib', '.png', '.jpg', '.jpeg', '.pbm', '.pgm', '.ppm', '.tif', '.tiff')):
                     imagelist.append(os.path.join(parent, filename))
             return imagelist
-    img_list = get_img_file('/Users/jiguang/my_disk/keras-yolo3-master/my_folder/img/stitch/cur')
-    j = 0
+    img_list = get_img_file(file_name)
+    points_label_names = []
     for i in img_list:
-        print(i)
-        j = j+1
+        label_name = []
+        point = []
         r = detect(net, meta, i.encode('utf-8'))
-        save_region(i, r, j)
-    end = time.clock()
-    print('Running time: %s Seconds' % (end - start))
+        pic_id = i.split("/")[-1][3:8]
+        # label_name.append(str(pic_id))
+        # point.append(str(pic_id))
+        # print(r)
 
+        for k in r:
+            label_name.append(str(k[0])[2:-1])
+            point.append([int(k[2][0]),int(k[2][1])])
+            # print([int(k[2][0]),int(k[2][1])])
+        save_region(i, r)
+        # label_names.append(label_name)
+        # points.append(point)
+        points_label_names.append([pic_id,point,label_name])
+        # points_label_names.append(point)
+        # points_label_names.append(label_name)
+        # print(label_names)
+        # print(point)
+        end = time.clock()
+        print('Running time: %s Seconds' % (end - start))
+    # print('points===',points)
+    # print('label_names===',points_label_names)
+    return points_label_names
+    # return points,label_names
+
+# darknet_out = output_points('/home/dcm360/object-detection/tianjin_ori')
+# for j in darknet_out:
+#     print('j[0] = ', j[0])
+#     print('j[1] = ', j[1])
+#     print('j[2] = ', j[2])
+    # if j[0] == i.split("/")[-1][0:5]:
+    # output.append(j[1])
+    # output.append(j[2])
 
 
 

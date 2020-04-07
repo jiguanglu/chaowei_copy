@@ -1,3 +1,4 @@
+# -*- coding:utf-8 -*-
 from create_json import *
 import json
 

@@ -8,32 +8,29 @@ import cv2 as cv
 import sys
 import numpy as np
 import os.path
+import argparse
+# from scipy.spatial import Delaunay
+# import matplotlib.pyplot as plt
 
 # Initialize the parameters
 confThreshold = 0.3  # Confidence threshold
 nmsThreshold = 0.3  # Non-maximum suppression threshold
-inpWidth = 608  # Width of network's input image
-inpHeight = 608  # Height of network's input image
+inpWidth = 416  # Width of network's input image
+inpHeight = 416  # Height of network's input image
 current_path = os.getcwd()
 
 # Load names of classes
 # classesFile = "/Users/jiguang/my_disk/keras-yolo3-master/my_folder/voc-bm.names";
-classesFile = "/Users/jiguang/my_disk/keras-yolo3-master/my_folder/voc-light.names";
-# classesFile = "/home/nvidia/object-detection/weights/voc-bm.names";
+classesFile = "/home/dcm360/object-detection/weights/voc.names";
 
 classes = None
 with open(classesFile, 'rt') as f:
     classes = f.read().rstrip('\n').split('\n')
 
 # Give the configuration and weight files for the model and load the network using them.
-# modelConfiguration = "/home/nvidia/object-detection/weights/yolov3-tiny.cfg";
-# modelWeights = "/home/nvidia/object-detection/weights/yolov3-tiny_820000.weights";
-# modelConfiguration = "/Users/jiguang/my_disk/keras-yolo3-master/my_folder/yolov3-voc-bm.cfg";
-# modelConfiguration = "/Users/jiguang/my_disk/keras-yolo3-master/my_folder/yolov3-tiny.cfg";
-modelConfiguration = "/Users/jiguang/my_disk/keras-yolo3-master/my_folder/yolov3-lights.cfg";
-modelWeights = "/Users/jiguang/my_disk/keras-yolo3-master/my_folder/weight/yolov3-lights_10000.weights";
-# modelWeights = "/Users/jiguang/my_disk/keras-yolo3-master/my_folder/weight/yolov3-tiny_820000.weights";
-# modelWeights = "/Users/jiguang/my_disk/keras-yolo3-master/my_folder/weight/yolov3-voc_30000.weights";
+modelConfiguration = "/home/dcm360/object-detection/weights/yolov3-voc.cfg";
+
+modelWeights = "/home/dcm360/object-detection/weights/yolov3-voc_51000.weights";
 
 net = cv.dnn.readNetFromDarknet(modelConfiguration, modelWeights)
 net.setPreferableBackend(cv.dnn.DNN_BACKEND_OPENCV)
@@ -52,14 +49,22 @@ def getOutputsNames(net):
 def drawPred(frame, classId, conf, left, top, right, bottom):
     # Draw a bounding box.
     # cv.rectangle(frame, (left, top), (right, bottom), (255, 178, 50), 1)
+   # labelName = classes[classId]
+   # if labelName == 'green':
+   #     cv.rectangle(frame, (left, top), (right, bottom), (31,255,60), 1)
+   # elif labelName == 'red':
+   #     cv.rectangle(frame, (left, top), (right, bottom), (255,0,255), 1)
+   
     labelName = classes[classId]
-    if labelName == 'green':
-        cv.rectangle(frame, (left, top), (right, bottom), (31,255,60), 1)
-    elif labelName == 'red':
-        cv.rectangle(frame, (left, top), (right, bottom), (255,0,255), 1)
-    # box边框
-    # else:
-    #     cv.rectangle(frame, (left, top), (right, bottom), (255, 255, 0), 1)
+    if labelName == 'yellow':
+        cv.rectangle(frame, (left, top), (right, bottom), (31, 255, 60), 1)
+    elif labelName == 'orange':
+        cv.rectangle(frame, (left, top), (right, bottom), (255, 0, 255), 1)
+    elif labelName == 'blue':
+        cv.rectangle(frame, (left, top), (right, bottom), (255, 0, 255), 1)
+   # box边框
+   # else:
+    #    cv.rectangle(frame, (left, top), (right, bottom), (255, 255, 0), 1)
 
     # cv.rectangle(frame, (left, top), (right, bottom), (0, 255, 255), 2)
 
@@ -79,8 +84,7 @@ def drawPred(frame, classId, conf, left, top, right, bottom):
     #字体上的幕布
     # cv.rectangle(frame, (left, top - round(1.5 * labelSize[1])), (left + round(1.5 * labelSize[0]), top + baseLine),
     #              (255, 255, 255), cv.FILLED)
-    cv.putText(frame, label, (left, top), cv.FONT_HERSHEY_SIMPLEX, 1, (0, 255, 255),2)
-    # cv.putText(frame, label, (left, top), cv.FONT_HERSHEY_SIMPLEX, 0.5, (0, 255, 255),2)
+    cv.putText(frame, label[0], (left, int(top-0.01*top)), cv.FONT_HERSHEY_SIMPLEX, 0.3, (255, 255, 255),1)
 
 
 # Remove the bounding boxes with low confidence using non-maxima suppression
@@ -131,15 +135,13 @@ def postprocess(frame, outs, img_path):
         label_names = classes[classIds[i]]
 
 
-        # if label_names != 'box':
-        #     box_infor.insert(0,[str(label_names), str(left), str(top), str(left + width),str(top + height)])
-        # else:
+        #if label_names != 'box':
+            #box_infor.insert(0,[str(label_names), str(left), str(top), str(left + width),str(top + height)])
+       # else:
             # box_infor.append([str(label_names), str(left), str(top), str(left + width), str(top + height), '\n'])
         box_infor.append([str(label_names), str(left), str(top), str(left + width), str(top + height)])
-            # box_infor.append([str(label_names), str(left), str(top), str(width), str(height)])
         # print([str(label_names), str(left), str(top), str(left + width), str(top + height)])
 #打印坐标,除了box以外的所有做坐标
-    # print(box_infor)
     new_label_names = []
     points = []
     for i in box_infor:
@@ -148,9 +150,8 @@ def postprocess(frame, outs, img_path):
         # 返回点的颜色
         new_label_names.append(i[0])
     return points,new_label_names
-    # return points[1:],new_label_names[1:]
 
-def output_points(img_path):
+def output_points01(img_path):
     # outputFile = "yolo_out_py.avi"
     if (img_path):
         # Open the image file
@@ -158,17 +159,14 @@ def output_points(img_path):
             print("Input image file ", img_path, " doesn't exist")
             sys.exit(1)
         cap = cv.VideoCapture(img_path)
+       # outputFile = img_path[:-4] + '.png'
         outputFile = img_path.split('.')[-2]+ '.png'
-        # outputFile = img_path[:-4] + '.png'
-        # print('img_path = ', img_path)
-
         # outputFile = img_path[:-4] + '.jpg'
 
     # Get the video writer initialized to save the output video
-
-    # if (not img_path):
-    #     vid_writer = cv.VideoWriter(outputFile, cv.VideoWriter_fourcc('M', 'J', 'P', 'G'), 30,
-    #                                 (round(cap.get(cv.CAP_PROP_FRAME_WIDTH)), round(cap.get(cv.CAP_PROP_FRAME_HEIGHT))))
+    if (not img_path):
+        vid_writer = cv.VideoWriter(outputFile, cv.VideoWriter_fourcc('M', 'J', 'P', 'G'), 30,
+                                    (round(cap.get(cv.CAP_PROP_FRAME_WIDTH)), round(cap.get(cv.CAP_PROP_FRAME_HEIGHT))))
 
     while cv.waitKey(1) < 0:
 
@@ -195,8 +193,8 @@ def output_points(img_path):
 
         #返回点的坐标和颜色
         infor = postprocess(frame, outs, img_path)
-        points = infor[1]
-        label_names = infor[0]
+        label_names = infor[1]
+        points = infor[0]
 
         # Put efficiency information. The function getPerfProfile returns the overall time for inference(t) and the timings for each of the layers(in layersTimes)
         t, _ = net.getPerfProfile()
@@ -210,12 +208,37 @@ def output_points(img_path):
         #存贮图片
         if (img_path):
             path = outputFile.split('/')[-1]
-            # print('path', outputFile)
-            # new_path = '/var/www/html/static/recognize/recognize_img/'+path
-            new_path = '/Users/jiguang/img_path/'+path
-            # print(new_path)
+            new_path = '/var/www/static/recognize/original/recognize_img/'+path
+            #new_path = '/var/www/html/static/recognize/original/recognize_img/'+path
+            # new_path = '/Users/jiguang/img_path/'+path
+            print(new_path)
             cv.imwrite(new_path, frame.astype(np.uint8));
-        # print(len(points))
-        return label_names,np.array(points)
+        return points, label_names
 
-# output_points('../img/1__23217323__20191213_183932408_15.tiff')
+
+
+def output_points(image_path):
+    def get_img_file(file_name):
+        imagelist = []
+        for parent, dirnames, filenames in os.walk(file_name):
+            for filename in filenames:
+                if filename.lower().endswith(
+                        ('.bmp', '.dib', '.png', '.jpg', '.jpeg', '.pbm', '.pgm', '.ppm', '.tif', '.tiff')):
+                    imagelist.append(os.path.join(parent, filename))
+            return imagelist
+
+    points_label_names = []
+    img_list = get_img_file(image_path)
+    for i in img_list:
+        # label_name = []
+        # point = []
+        # r = detect(net, meta, i.encode('utf-8'))
+        #pic_id = i.split("/")[-1][0:5]
+        pic_id = i.split("/")[-1][3:8]
+        res = output_points01(i)
+        point = res[0]
+        label_name = res[1]
+        # label_name = list(res[1])
+        points_label_names.append([pic_id,point,label_name])
+    # print(points_label_names)
+    return points_label_names
